@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<project name="ProjectName" default="jar" basedir=".">
+	<!-- Change Project name. Name of jar file will be the same as your project name.	-->
+	<property name="project.name" value="drama_v2" />
+	<!-- Set root path according to your project.	-->
+	<property name="ROOT_LOCATION" location="." />
+	<!-- Set internal and external lib location.	-->
+	<property name="EXTERNAL_LIB" location="../external_lib" />
+	<property name="INTERNAL_LIB" location="../jar" />
+
+	<property name="package.file.jar" value="../jar/${project.name}.jar" />
+	<echo>ROOT LOCATION->${ROOT_LOCATION}</echo>
+	<echo>EXTERNAL LIB->${EXTERNAL_LIB}</echo>
+	<echo>INTERNAL LIB->${INTERNAL_LIB}</echo>
+
+
+	<path id="project.class.path">
+		<!-- Exclude or include jars according to your requirement.	-->
+		<!-- Example:
+		  			<fileset dir="${EXTERNAL_LIB}" includes="**/*.jar" excludes="**/log4j-1.2.16.jar"/>
+		  		-->
+		<fileset dir="${EXTERNAL_LIB}" includes="**/*.jar" />
+		<fileset dir="${INTERNAL_LIB}" includes="**/*.jar" />
+	</path>
+	
+	<target name="javac" description="Compile java source">
+		<delete dir="build">
+		</delete>
+		<mkdir dir="build/classes" />
+		<javac srcdir="src" includes="**" destdir="build/classes" source="1.7" target="1.7" nowarn="true" debug="true" debuglevel="lines,vars,source">
+			<include name="include" />
+			<exclude name="exclude" />
+			<classpath refid="project.class.path" />
+		</javac>
+		<copy todir="build/classes">
+			<fileset dir="src" includes="**" excludes="**/*.java,**/*.properties,**/*.xml" />
+		</copy>
+	</target>
+
+
+
+	<target name="jar" depends="javac" description="Jar up the compiled classes into ${package.file.jar}">
+		<delete file="${package.file.jar}" />
+		<jar destfile="${package.file.jar}">
+			<fileset dir="build/classes" includes="**" />
+		</jar>
+	</target>
+
+
+</project>
