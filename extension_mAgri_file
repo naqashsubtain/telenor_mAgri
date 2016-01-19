@@ -1,0 +1,897 @@
+[MAGRI_10]
+exten => s,1,Answer()
+exten => s,n,Set(__DB_CLI=0${CALLERID(num)})
+exten => s,n,SET(__LANG=1)
+exten => s,n,Set(__AGISERVERIP=x5.t)
+exten => s,n,Set(__AGISERVERPORT=3003)
+;exten => s,n,Set(__AGISERVERIP=127.0.0.1)
+;exten => s,n,Set(__AGISERVERPORT=3003)
+exten => s,n,Set(__AGISERVERURL=agi://${AGISERVERIP}:${AGISERVERPORT})
+exten => s,n,Set(__CROP_NAME=rice)
+exten => s,n,Goto(MAGRI_20,s,1)
+
+[MAGRI_20]
+exten => s,1,Answer()
+exten => s,n,AGI(${AGISERVERURL}/checkuser.agi)
+exten => s,n,Set(__PROMPTS=/home/magri/${LANG})
+exten => s,n,SET(__CONTENTS=${PROMPTS}/content)
+exten => s,n,SET(__NAMES=${PROMPTS}/names)
+exten => s,n,SET(__ADVISORY=${PROMPTS}/advisory)
+exten => s,n,SET(__LOCATIONS=${PROMPTS}/locations)
+exten => s,n,WaitExten(2)
+;exten => s,n,Playback(${PROMPTS}/pre_welcome)
+exten => s,n,ExecIf($[${STATUS}=200]?Goto(MAGRI_PRE_SUB,s,1))
+exten => s,n,ExecIf($[${STATUS}=300]?Goto(MAGRI_TRY_OPT_SERVICE,s,1))
+exten => s,n,ExecIf($[${STATUS}=100]?Goto(MAGRI_MAIN_MENU,s,1):Goto(MAGRI_TRY_AGAIN,s,1))
+
+
+[MAGRI_TRY_OPT_SERVICE]
+exten => s,1,Answer()
+exten => s,n,SET(__CROP_ID=1)
+exten => s,n,SET(__CROP_NAME=wheat)
+exten => s,n,SET(__SUB_NAME=zamendar_sahab)
+exten => s,n,SET(__LOC_NAME=faisalabad)
+exten => s,n,SET(__LOC_ID=1)
+exten => s,n,ExecIf($[${DIAL_COUNT}<2]?SET(__LANG=1))
+exten => s,n,SET(__CROP_WELCOME=wheat_welcome)
+
+exten => s,n,Set(__PROMPTS=/home/magri/${LANG})
+exten => s,n,SET(__CONTENTS=${PROMPTS}/content)
+exten => s,n,SET(__CONTENTS=${PROMPTS}/content)
+exten => s,n,SET(__NAMES=${PROMPTS}/names)
+exten => s,n,SET(__ADVISORY=${PROMPTS}/advisory)
+exten => s,n,SET(__LOCATIONS=${PROMPTS}/locations)
+exten => s,n,Goto(MAGRI_MAIN_MENU,s,1)
+
+[MAGRI_FIRST_TIME_OPT_USER]
+exten => s,1,Answer()
+exten => s,n(menu),Background(${PROMPTS}/relevant_info)
+exten => s,n,WaitExten(3)
+exten => s,n,Goto(MAGRI_MAIN_MENU,s,main)
+
+exten => 0,1,AGI(${AGISERVERURL}/SaveHelpQuery.agi)
+exten => 0,n,Goto(MAGRI_MAIN_MENU,s,main)
+
+exten => i,1,Goto(MAGRI_MAIN_MENU,s,main)
+
+[MAGRI_SECOND_TIME_OPT_USER]
+exten => s,1,Answer()
+exten => s,n,ExecIf($[${DIAL_COUNT}=0]?Goto(MAGRI_MAIN_MENU,s,weather))
+exten => s,n(menu),Background(${PROMPTS}/lang_change)
+exten => s,n,WaitExten(3)
+exten => s,n,Goto(MAGRI_MAIN_MENU,s,weather)
+
+exten => 9,1,AGI(${AGISERVERURL}/UpdateLang.agi)
+exten => 9,n,Set(__PROMPTS=/home/magri/${LANG})
+exten => 9,n,SET(__CONTENTS=${PROMPTS}/content)
+exten => 9,n,SET(__CONTENTS=${PROMPTS}/content)
+exten => 9,n,SET(__NAMES=${PROMPTS}/names)
+exten => 9,n,SET(__ADVISORY=${PROMPTS}/advisory)
+exten => 9,n,SET(__LOCATIONS=${PROMPTS}/locations)
+exten => 9,n,Goto(MAGRI_MAIN_MENU,s,weather)
+
+exten => i,1,Goto(MAGRI_MAIN_MENU,s,weather)
+
+[MAGRI_TRY_AGAIN]
+exten => s,1,Answer()
+exten => s,n,Playback(${PROMPTS}/pre_welcome)
+exten => s,n,Verbose("PLEASE TRY AGAIN")
+exten => s,n(main),Background(${PROMPTS}/sub_req)
+exten => s,n,Goto(s,main)
+
+exten => 1,1,Goto(MAGRI_SUBSCRIBER_SERVICE,s,1)
+
+exten => i,1,Goto(s,main)
+
+[MAGRI_TRY_AGAIN_ALREADY]
+exten => s,1,Answer()
+exten => s,n,Verbose("PLEASE TRY AGAIN")
+exten => s,n,Playback(${PROMPTS}/pre_welcome)
+exten => s,n,Playback(${PROMPTS}/sub_req_already_sent)
+;exten => s,n,AGI(${AGISERVERURL}/saveSubConfirmation.agi)
+exten => s,n,Hangup()
+
+[MAGRI_PRE_SUB]
+exten => s,1,Answer()
+exten => s,n,Verbose("PLEASE TRY AGAIN")
+exten => s,n,Playback(${PROMPTS}/pre_welcome)
+exten => s,n(menu),Background(${PROMPTS}/already_sub_req)
+exten => s,n,Goto(s,menu)
+
+exten => 1,1,Goto(MAGRI_SUBSCRIBER_SERVICE_ALREADY,s,1)
+
+exten => i,1,Goto(MAGRI_SUBSCRIBER_SERVICE_ALREADY,s,1)
+
+[MAGRI_SUBSCRIBER_SERVICE_ALREADY]
+exten => s,1,Answer()
+exten => s,n,AGI(${AGISERVERURL}/saveSubConfirmation.agi)
+exten => s,n,Background(${PROMPTS}/already_sub_confirm)
+exten => s,n,Goto(MAGRI_MAIN_MENU,s,1)
+
+[MAGRI_SUBSCRIBER_SERVICE]
+exten => s,1,Answer()
+exten => s,n,AGI(${AGISERVERURL}/saveSubConfirmation.agi)
+exten => s,n,Background(${PROMPTS}/sub_confirm)
+exten => s,n,Hangup()
+
+
+[MAGRI_MAIN_MENU]
+exten => s,1,Answer()
+exten => s,n,Set(__MENU_COUNT=0)
+exten => s,n,Set(__CROP_ID=${CROP_ID})
+exten => s,n,Verbose("Crop Name is :" ${CROP_NAME} " and CROP ID is : " ${CROP_ID})
+exten => s,n,Verbose("Suscriber Name is :" ${SUB_NAME} " and location ID is : " ${LOC_ID})
+exten => s,n,Verbose("Location Name is :" ${LOC_NAME} " and CROP ID is : " ${CROP_ID})
+exten => s,n,Verbose("Dial Count:" ${DIAL_COUNT})
+exten => s,n,Verbose("Welcome "${SUB_NAME})
+exten => s,n,Playback(${NAMES}/${SUB_NAME})
+exten => s,n,Playback(${PROMPTS}/salam_welcome)
+exten => s,n,ExecIf($[${LANG_CHANGED}=NO]?Goto(MAGRI_SECOND_TIME_OPT_USER,s,1))
+exten => s,n(weather),Playback(${LOCATIONS}/weather_${LOC_NAME})
+exten => s,n,Playback(${ADVISORY}/advisory_${CROP_NAME}_${LOC_NAME})
+exten => s,n,ExecIf($[${DIAL_COUNT}=0]?Goto(MAGRI_FIRST_TIME_OPT_USER,s,1))
+exten => s,n(main),Background(${PROMPTS}/khush_zamin_main_menu_${CROP_NAME})
+exten => s,n,SET(__MENU_COUNT=$[${MENU_COUNT}+1])
+exten => s,n,Verbose(******* MENU_COUNT = ${MENU_COUNT})
+exten => s,n,ExecIf($[${MENU_COUNT}=3]?Goto(DISEASE_WARNINING,s,1):Goto(s,main))
+;exten => s,n,Goto(s,main)
+
+exten => 1,1,Goto(DISEASE_WARNINING,s,1)
+
+exten => 2,1,Goto(ADVISORY_CROP,s,1)
+
+exten => 3,1,Goto(IMPROVING_CROP_YIELD,s,1)
+exten => 4,1,Goto(MAGRI_NEWS_WEATHER_INFO,s,1)
+exten => 5,1,Set(__H_PRE_CONTEXT=MAGRI_MAIN_MENU)
+exten => 5,n,Set(__H_PRE_EXTEN=s)
+exten => 5,n,Set(__H_PRE_PRI=main)
+exten => 5,n,Goto(CONTENT_CROPS_MENU,s,1)
+;exten => 0,1,Goto(MAGRI_MAIN_MENU,s,1)
+exten => 0,1,Goto(MAGRI_HELP_UNSUB_SERVICE,s,1)
+exten => i,1,Goto(s,main)
+
+[DISEASE_WARNINING]
+exten => s,1,Answer()
+exten => s,n,SET(__ACTIVITY_TYPE=${CONTEXT})
+exten => s,n,SET(__START_TIME=${EPOCH})
+exten => s,n,Set(__M_NXT_CONTEXT=ADVISORY_CROP)
+exten => s,n,Set(__M_NXT_EXTEN=s)
+exten => s,n,Set(__M_NXT_PRI=1)
+exten => s,n,Verbose("YOU ARE IN DISEASE_WARNINING")
+exten => s,n,Set(__COUNT=0)
+exten => s,n,Set(__OPT=1)
+exten => s,n,AGI(${AGISERVERURL}/content.agi)
+exten => s,n,ExecIf($[${TOTAL_FILES}=0]?Goto(s,noresult))
+exten => s,n(warning),Background(${CONTENTS}/${FILE_NAME_1})
+exten => s,n(again),Background(${PROMPTS}/main_post_content)
+exten => s,n,SET(__COUNT=$[${COUNT}+1])
+exten => s,n,ExecIf($[${COUNT}<2]?Goto(s,again):Goto(MAIN_CONTENT_FILES,s,1))
+exten => s,n(noresult),Playback(${PROMPTS}/content_not_available)
+
+exten => s,n,Gosub(MAGRI_SAVEACTIVITY,s,1)
+exten => s,n,Goto(MAGRI_MAIN_MENU,s,main)
+exten => 1,1,Goto(s,warning)
+exten => 2,1,Goto(MAIN_CONTENT_FILES,s,1)
+
+exten => 0,1,Gosub(MAGRI_SAVEACTIVITY,s,1)
+exten => 0,n,Goto(MAGRI_MAIN_MENU,s,main)
+
+exten => 9,1,Gosub(MAGRI_SAVEACTIVITY,s,1)
+exten => 9,n,Goto(MAGRI_MAIN_MENU,s,main)
+
+exten => i,1,Goto(s,again)
+
+exten => h,1,Goto(MAGRI_HANG_UP,s,1)
+
+[ADVISORY_CROP]
+exten => s,1,Answer()
+exten => s,n,SET(__ACTIVITY_TYPE=${CONTEXT})
+exten => s,n,SET(__START_TIME=${EPOCH})
+
+exten => s,n,Set(__M_NXT_CONTEXT=IMPROVING_CROP_YIELD)
+exten => s,n,Set(__M_NXT_EXTEN=s)
+exten => s,n,Set(__M_NXT_PRI=1)
+exten => s,n,Verbose("YOU ARE IN ADVISORY_CROP")
+exten => s,n,Set(__COUNT=0)
+exten => s,n,Set(__OPT=2)
+exten => s,n,AGI(${AGISERVERURL}/content.agi)
+exten => s,n,ExecIf($[${TOTAL_FILES}=0]?Goto(s,noresult))
+exten => s,n(crop),Background(${CONTENTS}/${FILE_NAME_1})
+exten => s,n(again),Background(${PROMPTS}/main_post_content)
+exten => s,n,SET(__COUNT=$[${COUNT}+1])
+exten => s,n,ExecIf($[${COUNT}<2]?Goto(s,again):Goto(MAIN_CONTENT_FILES,s,1))
+exten => s,n(noresult),Playback(${PROMPTS}/content_not_available)
+
+exten => s,n,Gosub(MAGRI_SAVEACTIVITY,s,1)
+exten => s,n,Goto(MAGRI_MAIN_MENU,s,main)
+
+exten => 1,1,Goto(s,crop)
+
+exten => 2,1,Goto(MAIN_CONTENT_FILES,s,1)
+
+exten => 0,1,Gosub(MAGRI_SAVEACTIVITY,s,1)
+exten => 0,n,Goto(MAGRI_MAIN_MENU,s,main)
+
+exten => 9,1,Gosub(MAGRI_SAVEACTIVITY,s,1)
+exten => 9,n,Goto(MAGRI_MAIN_MENU,s,main)
+
+exten => i,1,Goto(s,again)
+exten => h,1,Goto(MAGRI_HANG_UP,s,1)
+
+[IMPROVING_CROP_YIELD]
+exten => s,1,Answer()
+exten => s,n,SET(__ACTIVITY_TYPE=${CONTEXT})
+exten => s,n,SET(__START_TIME=${EPOCH})
+exten => s,n,Set(__M_NXT_CONTEXT=MAGRI_NEWS_WEATHER_INFO)
+exten => s,n,Set(__M_NXT_EXTEN=s)
+exten => s,n,Set(__M_NXT_PRI=1)
+exten => s,n,Verbose("YOU ARE IN IMPROVING_CROP_YIELD")
+exten => s,n,Set(__COUNT=0)
+exten => s,n,Set(__OPT=3)
+exten => s,n,AGI(${AGISERVERURL}/content.agi)
+exten => s,n,ExecIf($[${TOTAL_FILES}=0]?Goto(s,noresult))
+exten => s,n(improv),Background(${CONTENTS}/${FILE_NAME_1})
+exten => s,n(again),Background(${PROMPTS}/main_post_content)
+exten => s,n,SET(__COUNT=$[${COUNT}+1])
+exten => s,n,ExecIf($[${COUNT}<2]?Goto(s,again):Goto(MAIN_CONTENT_FILES,s,1))
+exten => s,n(noresult),Playback(${PROMPTS}/content_not_available)
+
+exten => s,n,Gosub(MAGRI_SAVEACTIVITY,s,1)
+exten => s,n,Goto(MAGRI_MAIN_MENU,s,main)
+
+exten => 1,1,Goto(s,improv)
+exten => 2,1,Goto(MAIN_CONTENT_FILES,s,1)
+exten => 0,1,Gosub(MAGRI_SAVEACTIVITY,s,1)
+exten => 0,n,Goto(MAGRI_MAIN_MENU,s,main)
+exten => 9,1,Gosub(MAGRI_SAVEACTIVITY,s,1)
+exten => 9,n,Goto(MAGRI_MAIN_MENU,s,main)
+
+exten => i,1,Goto(s,again)
+
+exten => h,1,Goto(MAGRI_HANG_UP,s,1)
+;********************************
+[MAIN_CONTENT_FILES]
+
+exten => s,1,Answer()
+exten => s,n,ExecIf($[${TOTAL_FILES}=0]?Goto(s,noresult))
+exten => s,n,SET(__i=2)
+exten => s,n(again),Background(${CONTENTS}/${FILE_NAME_${i}})
+exten => s,n(menu),Background(${PROMPTS}/main_post_content)
+exten => s,n,Goto(s,menu)
+exten => s,n(noresult),Playback(${PROMPTS}/content_not_available)
+exten => s,n,Goto(MAGRI_NEWS_WEATHER_INFO,s,1)
+
+exten => 1,1,Verbose(******* user pressed = ${EXTEN})
+exten => 1,n,SET(__i=$[${i}-1])
+exten => 1,n,ExecIf($[${i}<1]?Playback(${PROMPTS}/first_chapter):Goto(s,again))
+exten => 1,n,SET(__i=1)
+exten => 1,n,Goto(s,again)
+
+exten => 2,1,Verbose(******* user pressed = ${EXTEN})
+exten => 2,n,Goto(s,again)
+
+exten => 3,1,Verbose(******* user pressed = ${EXTEN})
+exten => 3,n,SET(__i=$[${i}+1])
+exten => 3,n,ExecIf($[${i}>${TOTAL_FILES}]?GOTO(${M_NXT_CONTEXT},${M_NXT_EXTEN},${M_NXT_PRI}):Goto(s,again))
+exten => 3,n,SET(__i=${TOTAL_FILES})
+exten => 3,n,Goto(s,again)
+
+exten => i,1,Goto(s,again)
+
+exten => 0,1,Gosub(MAGRI_SAVEACTIVITY,s,1)
+exten => 0,n,Goto(MAGRI_MAIN_MENU,s,main)
+
+exten => 9,1,Gosub(MAGRI_SAVEACTIVITY,s,1)
+exten => 9,n,Goto(MAGRI_MAIN_MENU,s,main)
+
+exten => *,1,Gosub(MAGRI_SAVEACTIVITY,s,1)
+exten => *,n,Goto(MAGRI_MAIN_MENU,s,main)
+
+exten => h,1,Goto(MAGRI_HANG_UP,s,1)
+
+
+;********************************
+
+[MAGRI_NEWS_WEATHER_INFO]
+exten => s,1,Answer()
+
+exten => s,n,Verbose("YOU ARE IN MAGRI_NEWS_WEATHER_INFO")
+exten => s,n(news),Background(${PROMPTS}/news_weather_info)
+exten => s,n,Goto(s,news)
+
+exten => 1,1,Goto(MAIN_SEED_VARIETIES,s,1)
+
+exten => 2,1,Goto(LATEST_AGRI_NEWS,s,1)
+exten => 3,1,Goto(LATEST_WEATHER_NEWS,s,1)
+exten => 0,1,Goto(MAGRI_MAIN_MENU,s,main)
+exten => 9,1,Goto(MAGRI_MAIN_MENU,s,main)
+exten => i,1,Goto(s,news)
+
+[MAIN_SEED_VARIETIES]
+exten => s,1,Answer()
+exten => s,n,SET(__ACTIVITY_TYPE=${CONTEXT})
+exten => s,n,SET(__START_TIME=${EPOCH})
+
+exten => s,n,Set(__M_NXT_CONTEXT=LATEST_AGRI_NEWS)
+exten => s,n,Set(__M_NXT_EXTEN=s)
+exten => s,n,Set(__M_NXT_PRI=1)
+exten => s,n,Verbose("YOU ARE IN MAIN_SEED_VARIETIES")
+exten => s,n,AGI(${AGISERVERURL}/GetNewSeedsVarities.agi)
+exten => s,n,Goto(MAGRI_NEWS_WEATHER_PLAY_FILES_MAIN,s,1)
+
+exten => h,1,Goto(MAGRI_HANG_UP,s,1)
+
+[LATEST_AGRI_NEWS]
+exten => s,1,Answer()
+exten => s,n,SET(__ACTIVITY_TYPE=${CONTEXT})
+exten => s,n,SET(__START_TIME=${EPOCH})
+exten => s,n,Set(__M_NXT_CONTEXT=LATEST_WEATHER_NEWS)
+exten => s,n,Set(__M_NXT_EXTEN=s)
+exten => s,n,Set(__M_NXT_PRI=1)
+exten => s,n,Verbose("YOU ARE IN LATEST_AGRI_NEWS")
+exten => s,n,AGI(${AGISERVERURL}/GetLatestAgricultureNews.agi)
+exten => s,n,Goto(MAGRI_NEWS_WEATHER_PLAY_FILES_MAIN,s,1)
+exten => h,1,Goto(MAGRI_HANG_UP,s,1)
+
+
+[LATEST_WEATHER_NEWS]
+exten => s,1,Answer()
+exten => s,n,SET(__ACTIVITY_TYPE=${CONTEXT})
+exten => s,n,SET(__START_TIME=${EPOCH})
+exten => s,n,Set(__M_NXT_CONTEXT=DISEASE_WARNINING)
+exten => s,n,Set(__M_NXT_EXTEN=s)
+exten => s,n,Set(__M_NXT_PRI=1)
+exten => s,n,Verbose("YOU ARE IN LATEST_WEATHER_NEWS")
+exten => s,n,AGI(${AGISERVERURL}/GetLatestWeatherNews.agi)
+exten => s,n,Goto(MAGRI_NEWS_WEATHER_PLAY_FILES_MAIN,s,1)
+exten => h,1,Goto(MAGRI_HANG_UP,s,1)
+
+;;;;;;;;;;;;
+
+[MAGRI_NEWS_WEATHER_PLAY_FILES_MAIN]
+exten => s,1,Answer()
+exten => s,n,ExecIf($[${TOTAL_FILES}=0]?Goto(s,noresult))
+exten => s,n,SET(__i=1)
+exten => s,n(again),Background(${CONTENTS}/${FILE_NAME_${i}})
+exten => s,n(menu),Background(${PROMPTS}/main_post_content)
+exten => s,n,Goto(s,menu)
+exten => s,n(noresult),Playback(${PROMPTS}/content_not_available)
+
+exten => s,n,Gosub(MAGRI_SAVEACTIVITY,s,1)
+exten => s,n,Goto(MAGRI_NEWS_WEATHER_INFO,s,1)
+
+exten => 1,1,Verbose(******* user pressed = ${EXTEN})
+exten => 1,n,SET(__i=$[${i}-1])
+exten => 1,n,ExecIf($[${i}<1]?Playback(${PROMPTS}/first_chapter):Goto(s,again))
+exten => 1,n,SET(__i=1)
+exten => 1,n,Goto(s,again)
+
+exten => 2,1,Verbose(******* user pressed = ${EXTEN})
+exten => 2,n,Goto(s,again)
+
+exten => 3,1,Verbose(******* user pressed = ${EXTEN})
+exten => 3,n,SET(__i=$[${i}+1])
+exten => 3,n,ExecIf($[${i}>${TOTAL_FILES}]?GOTO(${M_NXT_CONTEXT},${M_NXT_EXTEN},${M_NXT_PRI}):Goto(s,again))
+exten => 3,n,SET(__i=${TOTAL_FILES})
+exten => 3,n,Goto(s,again)
+
+exten => i,1,Goto(s,again)
+
+exten => 0,1,Gosub(MAGRI_SAVEACTIVITY,s,1)
+exten => 0,n,Goto(MAGRI_MAIN_MENU,s,main)
+
+exten => 9,1,Gosub(MAGRI_SAVEACTIVITY,s,1)
+exten => 9,n,GOTO(MAGRI_NEWS_WEATHER_INFO,s,1)
+
+exten => *,1,Gosub(MAGRI_SAVEACTIVITY,s,1)
+exten => *,n,Goto(MAGRI_MAIN_MENU,s,main)
+
+exten => h,1,Goto(MAGRI_HANG_UP,s,1)
+
+[MAGRI_HELP_UNSUB_SERVICE]
+exten => s,1,Answer()
+exten => s,n,Verbose("YOU ARE IN MAGRI_HELP_UNSUB_SERVICE")
+exten => s,n(again),Background(${PROMPTS}/help_unsub_menu)
+exten => s,n,Goto(s,again)
+exten => 1,1,Goto(HELP_ACCESS_SERVICE,s,1)
+exten => 2,1,Goto(MAGRI_UNSUBSCRIBE_SERVICE,2,unsub)
+exten => 0,1,Goto(MAGRI_MAIN_MENU,s,main)
+exten => 9,1,Goto(MAGRI_MAIN_MENU,s,main)
+
+exten => i,1,Goto(s,again)
+
+[HELP_ACCESS_SERVICE]
+exten => s,1,Answer()
+exten => s,n,AGI(${AGISERVERURL}/SaveHelpQuery.agi)
+exten => s,n(again),Background(${PROMPTS}/srvc_method_explain)
+exten => s,n,Goto(MAGRI_HELP_UNSUB_SERVICE,s,again)
+
+exten => 0,1,Goto(MAGRI_MAIN_MENU,s,main)
+exten => i,1,Goto(MAGRI_HELP_UNSUB_SERVICE,s,again)
+
+[MAGRI_UNSUBSCRIBE_SERVICE]
+exten => s,1,Answer()
+exten => s,n(again),Background(${PROMPTS}/help_unsub_menu)
+exten => s,n,Goto(s,again)
+
+exten => 1,1,Playback(${PROMPTS}/srvc_method_explain)
+exten => 1,n,Goto(s,again)
+
+exten => 2,1(unsub),AGI(${AGISERVERURL}/unsubscribe.agi)
+exten => 2,n,Playback(${PROMPTS}/unsub_confirm)
+exten => 2,n,Hangup()
+
+exten => 0,1,Goto(MAGRI_MAIN_MENU,s,main)
+exten => i,1,Goto(MAGRI_MAIN_MENU,s,main)
+
+;@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+
+[MAGRI_EXTENDED_SHORT_CODE]
+exten => s,1,Answer()
+exten => s,n,Set(__DB_CLI=0${CALLERID(num)})
+exten => s,n,SET(__LANG=1)
+exten => s,n,Set(__AGISERVERIP=x5.t)
+exten => s,n,Set(__AGISERVERPORT=3003)
+;exten => s,n,Set(__AGISERVERIP=127.0.0.1)
+;exten => s,n,Set(__AGISERVERPORT=3003)
+exten => s,n,Set(__AGISERVERURL=agi://${AGISERVERIP}:${AGISERVERPORT})
+exten => s,n,SET(__MAGRI_SHORT_CODE=${EXTENTED_CODE})
+exten => s,n,Set(__CROP_ID=${MAGRI_SHORT_CODE:1})
+exten => s,n(check_esub),AGI(${AGISERVERURL}/CheckSubscriberExtended.agi)
+exten => s,n,Set(__PROMPTS=/home/magri/${LANG})
+exten => s,n,SET(__CONTENTS=${PROMPTS}/content)
+exten => s,n,SET(__CONTENTS=${PROMPTS}/content)
+exten => s,n,SET(__NAMES=${PROMPTS}/names)
+exten => s,n,SET(__ADVISORY=${PROMPTS}/advisory)
+exten => s,n,SET(__LOCATIONS=${PROMPTS}/locations)
+exten => s,n,ExecIf($[${MAGRI_SHORT_CODE}=1]?Goto(MAGRI_TRY_FREE_SERVICE,s,1))
+exten => s,n,ExecIf($[${STATUS}=200]?Goto(MAGRI_PRE_SUB,s,1))
+exten => s,n,ExecIf($[${STATUS}=300]?Goto(MAGRI_TRY_OPT_SERVICE,s,1))
+exten => s,n,ExecIf($[${STATUS}=100]?Goto(MAGRI_EXTENDED_SHORT_CODE_SUBSCRIBER,s,1):Goto(MAGRI_TRY_AGAIN,s,1))
+
+
+[MAGRI_TRY_FREE_SERVICE]
+exten => s,1,Answer()
+exten => s,n,SET(__STATUS=100)
+exten => s,n,SET(__CROP_ID=1)
+exten => s,n,SET(__CROP_NAME=wheat)
+exten => s,n,SET(__SUB_NAME=zamendar_sahab)
+exten => s,n,SET(__LOC_NAME=chiniot)
+exten => s,n,SET(__LOC_ID=3)
+exten => s,n,SET(__LANG=1)
+exten => s,n,SET(__CROP_WELCOME=wheat_welcome)
+
+exten => s,n,Set(__PROMPTS=/home/magri/${LANG})
+exten => s,n,SET(__CONTENTS=${PROMPTS}/content)
+exten => s,n,SET(__CONTENTS=${PROMPTS}/content)
+exten => s,n,SET(__NAMES=${PROMPTS}/names)
+exten => s,n,SET(__ADVISORY=${PROMPTS}/advisory)
+exten => s,n,SET(__LOCATIONS=${PROMPTS}/locations)
+exten => s,n,Goto(MAGRI_MAIN_MENU,s,1)
+
+
+
+[MAGRI_EXTENDED_SHORT_CODE_SUBSCRIBER]
+exten => s,1,Answer()
+exten => s,n,Verbose("EXTENDED SHORT CODE IS : " ${MAGRI_SHORT_CODE})
+exten => s,n,ExecIf($[${MAGRI_SHORT_CODE}=9]?Goto(CROP_SERVICE_HELP,s,1))
+exten => s,n,ExecIf($[${MAGRI_SHORT_CODE}>06]?Hangup())
+exten => s,n,ExecIf($[${MAGRI_SHORT_CODE}<01]?Hangup())
+exten => s,n,Verbose("CROP_ID FROM EXTENDED SHORT CODE IS : " ${CROP_ID})
+exten => s,n,Goto(STAGE_WISE_CROP_INFO,s,1)
+
+;@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+
+
+[CONTENT_CROPS_MENU]
+exten => s,1,Answer()
+exten => s,n(play),Background(${PROMPTS}/content_crop_menu)
+exten => s,n,Goto(s,play)
+exten => 1,1,Set(__CROP_ID=1)
+exten => 1,2,Goto(MAGRI_EXTENDED_SHORT_CODE,s,check_esub)
+
+exten => 2,1,Set(__CROP_ID=2)
+exten => 2,2,Goto(MAGRI_EXTENDED_SHORT_CODE,s,check_esub)
+
+exten => 3,1,Set(__CROP_ID=3)
+exten => 3,2,Goto(MAGRI_EXTENDED_SHORT_CODE,s,check_esub)
+
+exten => 4,1,Set(__CROP_ID=4)
+exten => 4,2,Goto(MAGRI_EXTENDED_SHORT_CODE,s,check_esub)
+
+exten => 5,1,Set(__CROP_ID=5)
+exten => 5,2,Goto(MAGRI_EXTENDED_SHORT_CODE,s,check_esub)
+
+exten => 6,1,Set(__CROP_ID=6)
+exten => 6,2,Goto(MAGRI_EXTENDED_SHORT_CODE,s,check_esub)
+
+exten => 0,1,GOTO(${H_PRE_CONTEXT},${H_PRE_EXTEN},${H_PRE_PRI})
+exten => i,1,Goto(s,play)
+
+
+
+[STAGE_WISE_CROP_INFO]
+exten => s,1,Answer()
+exten => s,n,Set(__LOOP=0)
+exten => s,n,AGI(${AGISERVERURL}/crop_welcome.agi)
+exten => s,n,Playback(${PROMPTS}/${CROP_WELCOME})
+exten => s,n(main),Background(${PROMPTS}/main_menu_${CROP_NAME})
+exten => s,n,SET(__LOOP=$[${LOOP}+1])
+exten => s,n,ExecIf($[${LOOP}=2]?Hangup())
+exten => s,n,Goto(s,main)
+exten => 1,1,Goto(CROP_SOWING_SUB_MENU,s,1)
+exten => 2,1,Goto(CROP_GROWING_SUB_MENU,s,1)
+exten => 3,1,Goto(LEARN_ABOUT_HARVESTING,s,1)
+exten => 4,1,Set(__H_PRE_CONTEXT=STAGE_WISE_CROP_INFO)
+exten => 4,n,Set(__H_PRE_EXTEN=s)
+exten => 4,n,Set(__H_PRE_PRI=main)
+exten => 4,1,Goto(CONTENT_CROPS_MENU,s,1)
+exten => 9,1,Goto(CROP_SERVICE_HELP,s,1)
+exten => 0,1,Goto(STAGE_WISE_CROP_INFO,s,main)
+exten => i,1,Goto(s,main)
+
+
+[CROP_SOWING_SUB_MENU]
+exten => s,1,Answer()
+exten => s,n,Set(__CATE=1)
+exten => s,n,Set(__H_PRE_CONTEXT=CROP_SOWING_SUB_MENU)
+exten => s,n,Set(__H_PRE_EXTEN=s)
+exten => s,n,Set(__H_PRE_PRI=sow)
+exten => s,n(sow),Background(${PROMPTS}/crop_sowing_menu)
+exten => s,n,Goto(s,sow)
+
+exten => 1,1,Goto(LEARN_LAND_PREPARATION,s,1)
+exten => 2,1,Goto(SEED_VARIETIES,s,1)
+exten => 3,1,Goto(LEARN_ABOUT_SOWING,s,1)
+exten => 4,1,Goto(CONTENT_CROPS_MENU,s,1)
+exten => 9,1,Goto(CROP_SERVICE_HELP,s,1)
+exten => 0,1,Goto(STAGE_WISE_CROP_INFO,s,main)
+
+exten => i,1,Goto(s,sow)
+
+
+[LEARN_LAND_PREPARATION]
+exten => s,1,Answer()
+exten => s,n,Set(__M_NXT_CONTEXT=SEED_VARIETIES)
+exten => s,n,Set(__M_NXT_EXTEN=s)
+exten => s,n,Set(__M_NXT_PRI=1)
+exten => s,n,Set(__SUB_CATE=1)
+exten => s,n,AGI(${AGISERVERURL}/extended_content.agi)
+exten => s,n,ExecIf($[${EXT_TOTAL_FILES}<1]?Goto(s,noresult))
+exten => s,n(land),Background(${CONTENTS}/${EXT_FILE_NAME_1})
+exten => s,n(again),Background(${PROMPTS}/main_post_content)
+exten => s,n,Goto(s,again)
+exten => s,n(noresult),Playback(${PROMPTS}/content_not_available)
+exten => s,n,Goto(CROP_SOWING_SUB_MENU,s,1)
+exten => 1,1,Goto(s,land)
+
+exten => 2,1,Set(__H_PRE_CONTEXT=CROP_SOWING_SUB_MENU)
+exten => 2,n,Set(__H_PRE_EXTEN=s)
+exten => 2,n,Set(__H_PRE_PRI=sow)
+exten => 2,n,Goto(EXTENDED_SIMILAR_INFORMATION,s,1)
+exten => 9,1,Goto(CROP_SOWING_SUB_MENU,s,sow)
+exten => 0,1,Goto(STAGE_WISE_CROP_INFO,s,main)
+exten => i,1,Goto(s,again)
+
+[SEED_VARIETIES]
+exten => s,1,Answer()
+exten => s,n,Set(__M_NXT_CONTEXT=LEARN_ABOUT_SOWING)
+exten => s,n,Set(__M_NXT_EXTEN=s)
+exten => s,n,Set(__M_NXT_PRI=1)
+exten => s,n,Set(__SUB_CATE=2)
+exten => s,n,AGI(${AGISERVERURL}/extended_content.agi)
+exten => s,n,ExecIf($[${EXT_TOTAL_FILES}<1]?Goto(s,noresult))
+exten => s,n(seed),Background(${CONTENTS}/${EXT_FILE_NAME_1})
+exten => s,n(again),Background(${PROMPTS}/main_post_content)
+exten => s,n,Goto(s,again)
+exten => s,n(noresult),Playback(${PROMPTS}/content_not_available)
+exten => s,n,Goto(CROP_SOWING_SUB_MENU,s,1)
+exten => 1,1,Goto(s,seed)
+
+exten => 2,1,Set(__H_PRE_CONTEXT=CROP_SOWING_SUB_MENU)
+exten => 2,n,Set(__H_PRE_EXTEN=s)
+exten => 2,n,Set(__H_PRE_PRI=sow)
+exten => 2,n,Goto(EXTENDED_SIMILAR_INFORMATION,s,1)
+exten => 9,1,Goto(CROP_SOWING_SUB_MENU,s,sow)
+exten => 0,1,Goto(STAGE_WISE_CROP_INFO,s,main)
+exten => i,1,Goto(s,again)
+
+[LEARN_ABOUT_SOWING]
+exten => s,1,Answer()
+exten => s,n,Set(__M_NXT_CONTEXT=CROP_GROWING_SUB_MENU)
+exten => s,n,Set(__M_NXT_EXTEN=s)
+exten => s,n,Set(__M_NXT_PRI=1)
+exten => s,n,Set(__SUB_CATE=3)
+exten => s,n,AGI(${AGISERVERURL}/extended_content.agi)
+exten => s,n,ExecIf($[${EXT_TOTAL_FILES}<1]?Goto(s,noresult))
+exten => s,n(land),Background(${CONTENTS}/${EXT_FILE_NAME_1})
+exten => s,n(again),Background(${PROMPTS}/main_post_content)
+exten => s,n,Goto(s,again)
+exten => s,n(noresult),Playback(${PROMPTS}/content_not_available)
+exten => s,n,Goto(CROP_SOWING_SUB_MENU,s,1)
+exten => 1,1,Goto(s,land)
+
+exten => 2,1,Set(__H_PRE_CONTEXT=CROP_SOWING_SUB_MENU)
+exten => 2,n,Set(__H_PRE_EXTEN=s)
+exten => 2,n,Set(__H_PRE_PRI=sow)
+exten => 2,n,Goto(EXTENDED_SIMILAR_INFORMATION,s,1)
+exten => 9,1,Goto(CROP_SOWING_SUB_MENU,s,sow)
+exten => 0,1,Goto(STAGE_WISE_CROP_INFO,s,main)
+exten => i,1,Goto(s,again)
+
+;*****************************************
+[EXTENDED_SIMILAR_INFORMATION]
+
+;****************************************
+exten => s,1,Answer()
+exten => s,n,ExecIf($[${TOTAL_FILES}=0]?Goto(s,noresult))
+exten => s,n,SET(__i=2)
+exten => s,n(again),Background(${CONTENTS}/${EXT_FILE_NAME_${i}})
+exten => s,n(menu),Background(${PROMPTS}/main_post_content)
+exten => s,n,Goto(s,menu)
+exten => s,n(noresult),Playback(${PROMPTS}/content_not_available)
+exten => s,n,GOTO(${H_PRE_CONTEXT},${H_PRE_EXTEN},${H_PRE_PRI})
+
+exten => 1,1,Verbose(******* user pressed = ${EXTEN})
+exten => 1,n,SET(__i=$[${i}-1])
+exten => 1,n,ExecIf($[${i}<1]?Playback(${PROMPTS}/first_chapter):Goto(s,again))
+exten => 1,n,SET(__i=1)
+exten => 1,n,Goto(s,again)
+
+exten => 2,1,Verbose(******* user pressed = ${EXTEN})
+exten => 2,n,Goto(s,again)
+
+exten => 3,1,Verbose(******* user pressed = ${EXTEN})
+exten => 3,n,SET(__i=$[${i}+1])
+exten => 3,n,ExecIf($[${i}>${TOTAL_FILES}]?GOTO(${M_NXT_CONTEXT},${M_NXT_EXTEN},${M_NXT_PRI}):Goto(s,again))
+exten => 3,n,SET(__i=${TOTAL_FILES})
+exten => 3,n,Goto(s,again)
+
+exten => i,1,Goto(s,again)
+exten => 9,1,GOTO(${H_PRE_CONTEXT},${H_PRE_EXTEN},${H_PRE_PRI})
+exten => *,1,Goto(STAGE_WISE_CROP_INFO,s,main)
+exten => 0,1,Goto(STAGE_WISE_CROP_INFO,s,main)
+;****************************************
+
+
+[CROP_GROWING_SUB_MENU]
+exten => s,1,Answer()
+exten => s,n,Set(__CATE=2)
+exten => s,n,Set(__H_PRE_CONTEXT=CROP_GROWING_SUB_MENU)
+exten => s,n,Set(__H_PRE_EXTEN=s)
+exten => s,n,Set(__H_PRE_PRI=grow)
+exten => s,n(grow),Background(${PROMPTS}/crop_growing_menu)
+exten => s,n,Goto(s,grow)
+
+exten => 1,1,Goto(LEARN_PESTS_AND_DISEASE,s,1)
+exten => 2,1,Goto(LEARN_ABOUT_FERTILIZERS,s,1)
+exten => 3,1,Goto(LEARN_ABOUT_WEED_MANAGEMENT,s,1)
+
+exten => 4,1,Goto(CONTENT_CROPS_MENU,s,1)
+exten => 9,1,Goto(CROP_SERVICE_HELP,s,1)
+exten => 0,1,Goto(STAGE_WISE_CROP_INFO,s,main)
+exten => i,1,Goto(s,sow)
+
+
+[LEARN_PESTS_AND_DISEASE]
+exten => s,1,Answer()
+exten => s,n,Set(__M_NXT_CONTEXT=LEARN_ABOUT_FERTILIZERS)
+exten => s,n,Set(__M_NXT_EXTEN=s)
+exten => s,n,Set(__M_NXT_PRI=1)
+exten => s,n,Set(__SUB_CATE=1)
+exten => s,n,AGI(${AGISERVERURL}/extended_content.agi)
+exten => s,n,ExecIf($[${EXT_TOTAL_FILES}<1]?Goto(s,noresult))
+exten => s,n(land),Background(${CONTENTS}/${EXT_FILE_NAME_1})
+exten => s,n(again),Background(${PROMPTS}/main_post_content)
+exten => s,n,Goto(s,again)
+exten => s,n(noresult),Playback(${PROMPTS}/content_not_available)
+exten => s,n,Goto(CROP_GROWING_SUB_MENU,s,1)
+exten => 1,1,Goto(s,land)
+
+exten => 2,1,Set(__H_PRE_CONTEXT=CROP_GROWING_SUB_MENU)
+exten => 2,n,Set(__H_PRE_EXTEN=s)
+exten => 2,n,Set(__H_PRE_PRI=grow)
+exten => 2,n,Goto(EXTENDED_SIMILAR_INFORMATION,s,1)
+exten => 9,1,Goto(CROP_GROWING_SUB_MENU,s,grow)
+exten => 0,1,Goto(STAGE_WISE_CROP_INFO,s,main)
+exten => i,1,Goto(s,again)
+
+[LEARN_ABOUT_FERTILIZERS]
+exten => s,1,Answer()
+exten => s,n,Set(__M_NXT_CONTEXT=LEARN_ABOUT_WEED_MANAGEMENT)
+exten => s,n,Set(__M_NXT_EXTEN=s)
+exten => s,n,Set(__M_NXT_PRI=1)
+exten => s,n,Set(__SUB_CATE=2)
+exten => s,n,AGI(${AGISERVERURL}/extended_content.agi)
+exten => s,n,ExecIf($[${EXT_TOTAL_FILES}<1]?Goto(s,noresult))
+exten => s,n(seed),Background(${CONTENTS}/${EXT_FILE_NAME_1})
+exten => s,n(again),Background(${PROMPTS}/main_post_content)
+exten => s,n,Goto(s,again)
+exten => s,n(noresult),Playback(${PROMPTS}/content_not_available)
+exten => s,n,Goto(CROP_GROWING_SUB_MENU,s,1)
+exten => 1,1,Goto(s,seed)
+exten => 2,1,Set(__H_PRE_CONTEXT=CROP_GROWING_SUB_MENU)
+exten => 2,n,Set(__H_PRE_EXTEN=s)
+exten => 2,n,Set(__H_PRE_PRI=grow)
+exten => 2,n,Goto(EXTENDED_SIMILAR_INFORMATION,s,1)
+exten => 9,1,Goto(CROP_GROWING_SUB_MENU,s,grow)
+exten => 0,1,Goto(STAGE_WISE_CROP_INFO,s,main)
+exten => i,1,Goto(s,again)
+
+[LEARN_ABOUT_WEED_MANAGEMENT]
+exten => s,1,Answer()
+exten => s,1,Answer()
+exten => s,n,Set(__M_NXT_CONTEXT=LEARN_ABOUT_HARVESTING)
+exten => s,n,Set(__M_NXT_EXTEN=s)
+exten => s,n,Set(__M_NXT_PRI=1)
+exten => s,n,Set(__SUB_CATE=3)
+exten => s,n,AGI(${AGISERVERURL}/extended_content.agi)
+exten => s,n,ExecIf($[${EXT_TOTAL_FILES}<1]?Goto(s,noresult))
+exten => s,n(land),Background(${CONTENTS}/${EXT_FILE_NAME_1})
+exten => s,n(again),Background(${PROMPTS}/main_post_content)
+exten => s,n,Goto(s,again)
+exten => s,n(noresult),Playback(${PROMPTS}/content_not_available)
+exten => s,n,Goto(CROP_GROWING_SUB_MENU,s,1)
+exten => 1,1,Goto(s,land)
+exten => 2,1,Set(__H_PRE_CONTEXT=CROP_GROWING_SUB_MENU)
+exten => 2,n,Set(__H_PRE_EXTEN=s)
+exten => 2,n,Set(__H_PRE_PRI=grow)
+exten => 2,n,Goto(EXTENDED_SIMILAR_INFORMATION,s,1)
+exten => 9,1,Goto(CROP_GROWING_SUB_MENU,s,grow)
+exten => 0,1,Goto(STAGE_WISE_CROP_INFO,s,main)
+exten => i,1,Goto(s,again)
+
+[LEARN_ABOUT_HARVESTING]
+exten => s,1,Answer()
+exten => s,n,Set(__CATE=3)
+exten => s,n,Set(__H_PRE_CONTEXT=LEARN_ABOUT_HARVESTING)
+exten => s,n,Set(__H_PRE_EXTEN=s)
+exten => s,n,Set(__H_PRE_PRI=harvest)
+exten => s,n(harvest),Background(${PROMPTS}/crop_harvesting_menu)
+exten => s,n,Goto(s,harvest)
+
+exten => 1,1,Goto(LEARN_HARVESTING_METHODS,s,1)
+exten => 2,1,Goto(LEARN_POST_HARVEST_TIPS,s,1)
+exten => 3,1,Goto(LEARN_ABOUT_HARVESTING_SUB,s,1)
+
+exten => 4,1,Goto(CONTENT_CROPS_MENU,s,1)
+exten => 9,1,Goto(CROP_SERVICE_HELP,s,1)
+exten => 0,1,Goto(STAGE_WISE_CROP_INFO,s,main)
+exten => i,1,Goto(s,harvest)
+
+
+[LEARN_HARVESTING_METHODS]
+exten => s,1,Answer()
+exten => s,n,Set(__M_NXT_CONTEXT=LEARN_POST_HARVEST_TIPS)
+exten => s,n,Set(__M_NXT_EXTEN=s)
+exten => s,n,Set(__M_NXT_PRI=1)
+exten => s,n,Set(__SUB_CATE=1)
+exten => s,n,AGI(${AGISERVERURL}/extended_content.agi)
+exten => s,n,ExecIf($[${EXT_TOTAL_FILES}<1]?Goto(s,noresult))
+exten => s,n(land),Background(${CONTENTS}/${EXT_FILE_NAME_1})
+exten => s,n(again),Background(${PROMPTS}/main_post_content)
+exten => s,n,Goto(s,again)
+exten => s,n(noresult),Playback(${PROMPTS}/content_not_available)
+exten => s,n,Goto(LEARN_ABOUT_HARVESTING,s,1)
+exten => 1,1,Goto(s,land)
+
+exten => 2,1,Set(__H_PRE_CONTEXT=LEARN_ABOUT_HARVESTING)
+exten => 2,n,Set(__H_PRE_EXTEN=s)
+exten => 2,n,Set(__H_PRE_PRI=harvest)
+exten => 2,n,Goto(EXTENDED_SIMILAR_INFORMATION,s,1)
+exten => 9,1,Goto(LEARN_ABOUT_HARVESTING,s,harvest)
+exten => 0,1,Goto(STAGE_WISE_CROP_INFO,s,main)
+exten => i,1,Goto(s,again)
+
+
+[LEARN_POST_HARVEST_TIPS]
+exten => s,1,Answer()
+exten => s,n,Set(__M_NXT_CONTEXT=LEARN_ABOUT_HARVESTING_SUB)
+exten => s,n,Set(__M_NXT_EXTEN=s)
+exten => s,n,Set(__M_NXT_PRI=1)
+exten => s,n,Set(__SUB_CATE=2)
+exten => s,n,AGI(${AGISERVERURL}/extended_content.agi)
+exten => s,n,ExecIf($[${EXT_TOTAL_FILES}<1]?Goto(s,noresult))
+exten => s,n(seed),Background(${CONTENTS}/${EXT_FILE_NAME_1})
+exten => s,n(again),Background(${PROMPTS}/main_post_content)
+exten => s,n,Goto(s,again)
+exten => s,n(noresult),Playback(${PROMPTS}/content_not_available)
+exten => s,n,Goto(LEARN_ABOUT_HARVESTING,s,1)
+exten => 1,1,Goto(s,seed)
+exten => 2,1,Set(__H_PRE_CONTEXT=LEARN_ABOUT_HARVESTING)
+exten => 2,n,Set(__H_PRE_EXTEN=s)
+exten => 2,n,Set(__H_PRE_PRI=harvest)
+exten => 2,n,Goto(EXTENDED_SIMILAR_INFORMATION,s,1)
+exten => 9,1,Goto(LEARN_ABOUT_HARVESTING,s,harvest)
+exten => 0,1,Goto(STAGE_WISE_CROP_INFO,s,main)
+exten => i,1,Goto(s,again)
+
+[LEARN_ABOUT_HARVESTING_SUB]
+exten => s,1,Answer()
+exten => s,n,Set(__M_NXT_CONTEXT=CROP_SOWING_SUB_MENU)
+exten => s,n,Set(__M_NXT_EXTEN=s)
+exten => s,n,Set(__M_NXT_PRI=1)
+exten => s,n,Set(__SUB_CATE=3)
+exten => s,n,AGI(${AGISERVERURL}/extended_content.agi)
+exten => s,n,ExecIf($[${EXT_TOTAL_FILES}<1]?Goto(s,noresult))
+exten => s,n(land),Background(${CONTENTS}/${EXT_FILE_NAME_1})
+exten => s,n(again),Background(${PROMPTS}/main_post_content)
+exten => s,n,Goto(s,again)
+exten => s,n(noresult),Playback(${PROMPTS}/content_not_available)
+exten => s,n,Goto(LEARN_ABOUT_HARVESTING,s,1)
+exten => 1,1,Goto(s,land)
+exten => 2,1,Set(__H_PRE_CONTEXT=LEARN_ABOUT_HARVESTING)
+exten => 2,n,Set(__H_PRE_EXTEN=s)
+exten => 2,n,Set(__H_PRE_PRI=harvest)
+exten => 2,n,Goto(EXTENDED_SIMILAR_INFORMATION,s,1)
+exten => 9,1,Goto(LEARN_ABOUT_HARVESTING,s,harvest)
+exten => 0,1,Goto(STAGE_WISE_CROP_INFO,s,main)
+exten => i,1,Goto(s,again)
+
+
+[CROP_SERVICE_HELP]
+exten => s,1,Answer()
+exten => s,n,Verbose("Welcome "${SUB_NAME})
+exten => s,n,Playback(${NAMES}/${SUB_NAME})
+exten => s,n,Playback(${PROMPTS}/salam_welcome)
+exten => s,n(again),Background(${PROMPTS}/help_main_menu)
+exten => s,n,Goto(s,again)
+exten => 1,1,Background(${PROMPTS}/pre_welcome)
+exten => 1,n,Goto(s,again)
+exten => 2,1,Background(${PROMPTS}/7272_ivr_help_menu_section)
+exten => 2,n,Goto(s,again)
+exten => 3,1,Goto(MAGRI_UNSUBSCRIBE_SERVICE,2,unsub)
+
+;exten => 0,1,Goto(s,agn):GOTO(${H_PRE_CONTEXT},${H_PRE_EXTEN},${H_PRE_PRI})
+;exten => 0,1,AGI(${AGISERVERURL}/OBDcall.agi)
+exten => i,1,Goto(s,again)
+
+
+;##################################
+
+[MAGRI_EXTENDED_HELP_SHORT_CODE]
+exten => s,1,Answer()
+exten => s,n,Set(__DB_CLI=0${CALLERID(num)})
+exten => s,n,Set(__PROMPTS=/home/hasnain/magri)
+exten => s,n,Set(__AGISERVERIP=x5.t)
+exten => s,n,Set(__AGISERVERPORT=3003)
+exten => s,n,Set(__AGISERVERURL=agi://${AGISERVERIP}:${AGISERVERPORT})
+exten => s,n,Verbose("EXTENDED HELP SHORT CODE IS : " ${MAGRI_HELP_SHORT_CODE})
+exten => s,n,SET(__MAGRI_HELP_SHORT_CODE=${MAGRI_HELP_SHORT_CODE:4})
+exten => s,n,ExecIf($[${MAGRI_HELP_SHORT_CODE}=9]?Goto(MAGRI_HELP_SHORT_CODE,s,1))
+exten => s,n,Hangup()
+
+[MAGRI_HELP_SHORT_CODE]
+exten => s,1,Answer()
+exten => s,n,Playback(${PROMPTS}/welcome)
+exten => s,n(again),Background(${PROMPTS}/help_main_menu)
+exten => s,n,Goto(s,again)
+exten => 1,1,Playback(${PROMPTS}/khush_zamin_srvc_intro)
+exten => 1,2,Hangup()
+exten => 2,1,Playback(${PROMPTS}/srvc_method_explain)
+exten => 2,2,Hangup()
+exten => 3,1,Playback(${PROMPTS}/how_to_unsub)
+exten => 3,2,Hangup()
+exten => i,1,Goto(s,again)
+
+
+[MAGRI_HANG_UP]
+
+exten => s,1,Gosub(MAGRI_SAVEACTIVITY,s,1)
+
+exten => s,n,hangup()
+
+[MAGRI_SAVEACTIVITY]
+exten => s,1,SET(__END_TIME=${EPOCH})
+exten => s,n,SET(__DIFF=$[${END_TIME}-${START_TIME}])
+;exten => s,n,ExecIf([${DIFF}<1]?Goto(s,Ret))
+
+exten => s,n(Normal),SET(__SAVE_ACTIVITY=YES)
+exten => s,n,ExecIf($[${DIFF}==0]?Goto(s,Ret)
+;exten =>s,n,ExecIf($[${DIFF}<1]?Goto(s,Return))
+;exten => s,n,ExecIf($[${ACTIVITY_TYPE}==MAIN_CONTENT_FILES]?SET(__ACTIVITY_TYPE=${FILE_NAME_${i}}))
+
+;exten => s,n,Verbose(=========================------${ACTIVITY_TYPE}, ${START_TIME}, ${END_TIME}, ${DIFF}-----==================)
+exten => s,n,AGI(${AGISERVERURL}/save_segment_tracking.agi?CALLER_NUM=${DB_CLI})
+;exten => s,n,SET(__START_TIME=${END_TIME})
+exten => s,n(Ret),Return
